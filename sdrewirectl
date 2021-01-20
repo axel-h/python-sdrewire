@@ -12,6 +12,7 @@ import usb
 BITMODE_CBUS = 0x20
 
 SIO_SET_BITMODE_REQUEST = 0x0b
+SIO_READ_PINS_REQUEST = 0x0c
 
 # FTDIs CBUS bitmode expect the following value:
 # CBUS Bits
@@ -29,6 +30,17 @@ def ftdi_set_bitmode(dev, bitmask):
 
     wValue = bitmask | (BITMODE_CBUS << 8)
     dev.ctrl_transfer(bmRequestType, SIO_SET_BITMODE_REQUEST, wValue)
+
+def ftdi_get_pin(dev, bitmask):
+    bmRequestType = usb.util.build_request_type(usb.util.CTRL_IN,
+                                                usb.util.CTRL_TYPE_VENDOR,
+                                                usb.util.CTRL_RECIPIENT_DEVICE)
+
+    ret = dev.ctrl_transfer(bmRequestType, SIO_READ_PINS_REQUEST, 0, 0, 1)
+    if len(ret) < 1:
+        return None
+
+    return ret[0]
 
 def ftdi_find_sdremux(serial=None):
     devs = usb.core.find(find_all=True, custom_match = \
@@ -55,14 +67,17 @@ def ftdi_find_sdremux(serial=None):
 def sdmux(args):
     dev = ftdi_find_sdremux(args.serial)
 
-    mode = args.MODE[0]
-
-    if mode == "ts":
+    if args.ts:
         ftdi_set_bitmode(dev, 0x88)
-    elif mode == "dut":
+    elif args.dut:
         ftdi_set_bitmode(dev, 0x80)
-    else:
-        print("Invalid mode.")
+
+    if args.status:
+        if ftdi_get_pin(dev, 0x80) & 0x08:
+            mode = "TS"
+        else:
+            mode = "DUT"
+        print(f"SD mux connected to: {mode}")
 
 parser = argparse.ArgumentParser(description='SDReWire control utility.')
 parser.add_argument('--serial', type=str)
@@ -70,8 +85,11 @@ parser.add_argument('--serial', type=str)
 subparsers = parser.add_subparsers(title='Sub-commands')
 
 parser_sdmux = subparsers.add_parser('sdmux', help='Commands related to SD card muxing')
-parser_sdmux.add_argument('MODE', help='Mux to ts (test system) or dut (device under test)',
-                          choices=('ts', 'dut'), nargs=1)
+
+sdmux_mode_group = parser_sdmux.add_mutually_exclusive_group()
+sdmux_mode_group.add_argument('--ts', action='store_true', dest="ts", help="Mux SD card to test system")
+sdmux_mode_group.add_argument('--dut', action='store_true', dest="dut", help="Mux SD card to device under test")
+parser_sdmux.add_argument('--status', action='store_true', help="Display current status")
 parser_sdmux.set_defaults(func=sdmux)
 
 
