@@ -50,10 +50,44 @@ def ftdi_find_sdremux(serial=None):
                 (d.serial_number==serial if serial else True))
     return list(devs)
 
+def get_tty_device(dev):
+    # Find /sys device path
+    # See: http://gajjarpremal.blogspot.com/2015/04/sysfs-structures-for-linux-usb.html
+
+    # We probably could get concfiguration/interface using
+    # get_active_configuration() and friends. But they are always
+    # the same, so why bother.
+    cfg = 1
+    interface = 0
+
+    port_path = ".".join(str(x) for x in dev.port_numbers)
+    device_path = "/sys/bus/usb/devices/{}-{}:{}.{}".format(
+            dev.bus, port_path, cfg, interface)
+
+    if not os.path.isdir(device_path):
+        return None
+
+    for entry in os.listdir(device_path):
+        if entry.startswith("ttyUSB"):
+            return "/dev/{}".format(entry)
+
 def print_list(devs):
     print("Found the following devices:")
     for dev in sorted(devs, key=lambda dev: dev.address):
-        print(f"Device: {dev.address:03d}, Manufacturer: {dev.manufacturer}, Product: {dev.product}, Serial: {dev.serial_number}")
+        # Try to find /dev/ttyUSBX
+        try:
+            # Only make sense if the kernel driver is active. This throws an
+            # exception on non-Linux platforms.
+            if dev.is_kernel_driver_active(0):
+                tty_device = get_tty_device(dev)
+        except NotImplementedError:
+            # Ignore if we can't know if a kernel driver is active, probably not
+            # Linux.
+            pass
+
+        print(f"Bus {dev.bus:03d} Device {dev.address:03d}: {dev.manufacturer} " +
+              f"{dev.product} (Serial: {dev.serial_number}" +
+              f", Device: {tty_device})" if tty_device else ")")
 
 def get_sdrewire_dev(serial=None):
     devs = ftdi_find_sdremux(serial)
