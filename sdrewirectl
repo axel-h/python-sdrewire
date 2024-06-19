@@ -87,7 +87,8 @@ def print_list(devs):
 
         print(f"Bus {dev.bus:03d} Device {dev.address:03d}: {dev.manufacturer} " +
               f"{dev.product} (Serial: {dev.serial_number}" +
-              f", Device: {tty_device})" if tty_device else ")")
+              (f", Device: {tty_device}" if tty_device else "") +
+              ")" )
 
 def get_sdrewire_dev(serial=None):
     devs = ftdi_find_sdremux(serial)
