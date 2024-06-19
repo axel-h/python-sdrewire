@@ -54,7 +54,7 @@ def get_tty_device(dev):
     # Find /sys device path
     # See: http://gajjarpremal.blogspot.com/2015/04/sysfs-structures-for-linux-usb.html
 
-    # We probably could get concfiguration/interface using
+    # We probably could get configuration/interface using
     # get_active_configuration() and friends. But they are always
     # the same, so why bother.
     cfg = 1
