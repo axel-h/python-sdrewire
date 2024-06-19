@@ -128,33 +128,35 @@ def sdmux(args):
             mode = "DUT"
         print(f"SD mux connected to: {mode}")
 
-parser = argparse.ArgumentParser(description='SDReWire control utility.')
-parser.add_argument('--serial', type=str)
-
-subparsers = parser.add_subparsers(title='Sub-commands')
-
-parser_sdmux = subparsers.add_parser('sdmux', help='Commands related to SD card muxing')
-
-sdmux_mode_group = parser_sdmux.add_mutually_exclusive_group()
-sdmux_mode_group.add_argument('--ts', action='store_true', dest="ts", help="Mux SD card to test system")
-sdmux_mode_group.add_argument('--dut', action='store_true', dest="dut", help="Mux SD card to device under test")
-parser_sdmux.add_argument('--status', action='store_true', help="Display current status")
-parser_sdmux.set_defaults(func=sdmux)
-
-parser_list = subparsers.add_parser('list', help='Print a list of SDReWire devices')
-parser_list.set_defaults(func=list_devs)
-
-
-def main():
+def main(params: list):
     """Main program"""
-    args = parser.parse_args()
+
+    parser = argparse.ArgumentParser(description='SDReWire control utility.')
+    parser.add_argument('--serial', type=str)
+
+    subparsers = parser.add_subparsers(title='Sub-commands')
+
+    parser_sdmux = subparsers.add_parser('sdmux', help='Commands related to SD card muxing')
+
+    sdmux_mode_group = parser_sdmux.add_mutually_exclusive_group()
+    sdmux_mode_group.add_argument('--ts', action='store_true', dest="ts", help="Mux SD card to test system")
+    sdmux_mode_group.add_argument('--dut', action='store_true', dest="dut", help="Mux SD card to device under test")
+    parser_sdmux.add_argument('--status', action='store_true', help="Display current status")
+    parser_sdmux.set_defaults(func=sdmux)
+
+    parser_list = subparsers.add_parser('list', help='Print a list of SDReWire devices')
+    parser_list.set_defaults(func=list_devs)
+
+    args = parser.parse_args(params)
 
     if not hasattr(args, 'func'):
         parser.print_help()
-        sys.exit(1)
+        return 1
 
     args.func(args)
+    return 0
 
 if __name__ == "__main__":
-    main()
-
+    params = sys.argv[1:]  # drop parameter 0, holds name of the program
+    ret = main(params)
+    sys.exit(ret)
