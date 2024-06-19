@@ -110,8 +110,8 @@ def list_devs(args):
 
     if len(devs) == 0:
         print("No SDReWire device found")
-
-    print_list(devs)
+    else:
+        print_list(devs)
 
 def sdmux(args):
     dev = get_sdrewire_dev(args.serial)
