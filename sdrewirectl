@@ -17,8 +17,8 @@ SIO_READ_PINS_REQUEST = 0x0c
 # FTDIs CBUS bitmode expect the following value:
 # CBUS Bits
 # 3210 3210
-#      |------ Output Control 0->LO, 1->HI
-# |----------- Input/Output   0->Input, 1->Output
+#      |--|--- Output Control 0->LO, 1->HI
+# |--|-------- Input/Output   0->Input, 1->Output
 
 # PyUSB control endpoint communication, see also:
 # https://github.com/pyusb/pyusb/blob/master/docs/tutorial.rst
@@ -39,7 +39,7 @@ def ftdi_get_pin(dev):
     ret = dev.ctrl_transfer(bmRequestType, SIO_READ_PINS_REQUEST, 0, 0, 1)
     return ret[0] if len(ret) >= 1 else None
 
-def ftdi_find_sdremux(vid=0x0403, pid=0x6015, serial=None):
+def ftdi_find_sdremux(vid=0x04e8, pid=0x6001, serial=None):
     devs = usb.core.find(find_all=True, custom_match = \
             lambda d: \
                 d.idVendor == vid and \
@@ -112,7 +112,7 @@ def sdmux_get_device(serial=None):
 
 def sdmux_get_mode(dev):
     pins = ftdi_get_pin(dev)
-    return pins & 0x08
+    return pins & 0x01  # bit0 sets the mode
 
 def sdmux_get_mode_str(dev):
     mode = sdmux_get_mode(dev)
@@ -121,15 +121,16 @@ def sdmux_get_mode_str(dev):
            f"??? ({mode})"
 
 def sdmux_set_mode(dev, mode):
-    mode = mode & 0x08
-    ftdi_set_bitmode(dev, mode)
+    # Upper half of the byte sets all pins to output, bit0 sets the mode
+    mode = mode & 0x01
+    ftdi_set_bitmode(dev, 0xf0 | mode)
     assert mode == sdmux_get_mode(dev)
 
 def sdmux_mode_dut(dev):
     sdmux_set_mode(dev, 0x00)
 
 def sdmux_mode_ts(dev):
-    sdmux_set_mode(dev, 0x08)
+    sdmux_set_mode(dev, 0x01)
 
 def sdmux(args):
     dev = sdmux_get_device(args.serial)
