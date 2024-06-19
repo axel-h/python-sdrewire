@@ -31,7 +31,7 @@ def ftdi_set_bitmode(dev, bitmask):
     wValue = bitmask | (BITMODE_CBUS << 8)
     dev.ctrl_transfer(bmRequestType, SIO_SET_BITMODE_REQUEST, wValue)
 
-def ftdi_get_pin(dev, bitmask):
+def ftdi_get_pin(dev):
     bmRequestType = usb.util.build_request_type(usb.util.CTRL_IN,
                                                 usb.util.CTRL_TYPE_VENDOR,
                                                 usb.util.CTRL_RECIPIENT_DEVICE)
@@ -122,7 +122,7 @@ def sdmux(args):
         ftdi_set_bitmode(dev, 0x80)
 
     if args.status:
-        if ftdi_get_pin(dev, 0x80) & 0x08:
+        if ftdi_get_pin(dev) & 0x08:
             mode = "TS"
         else:
             mode = "DUT"
