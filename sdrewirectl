@@ -61,15 +61,14 @@ def get_tty_device(dev):
     interface = 0
 
     port_path = ".".join(str(x) for x in dev.port_numbers)
-    device_path = "/sys/bus/usb/devices/{}-{}:{}.{}".format(
-            dev.bus, port_path, cfg, interface)
+    device_path = f"/sys/bus/usb/devices/{dev.bus}-{port_path}:{cfg}.{interface}"
 
     if not os.path.isdir(device_path):
         return None
 
     for entry in os.listdir(device_path):
         if entry.startswith("ttyUSB"):
-            return "/dev/{}".format(entry)
+            return f"/dev/{entry}"
 
 def print_list(devs):
     print("Found the following devices:")
